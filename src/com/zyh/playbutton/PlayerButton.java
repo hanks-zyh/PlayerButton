@@ -4,12 +4,19 @@ import android.animation.Animator;
 import android.animation.Animator.AnimatorListener;
 import android.animation.ValueAnimator;
 import android.animation.ValueAnimator.AnimatorUpdateListener;
-import android.app.Activity;
 import android.content.Context;
+import android.content.res.TypedArray;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Path.Direction;
 import android.graphics.RectF;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -36,22 +43,52 @@ public class PlayerButton extends View {
 		if (attrs == null) {
 			return;
 		}
-		initAttrs(attrs);
+		initAttrs(context, attrs);
 		paint = new Paint();
 		paint.setStyle(Paint.Style.FILL);// 设置画笔的风格，空心还是实心
 		paint.setAntiAlias(true);
-		paint.setStrokeWidth(stokenWidth);
-
 		oval = new RectF();
+		path = new Path();
+		currentState = STATE_CAN_PLAY;
 	}
 
-	private void initAttrs(AttributeSet attrs) {
+	private void initAttrs(Context context, AttributeSet attrs) {
 
+		TypedArray ta = context.obtainStyledAttributes(attrs,
+				R.styleable.PlayerButton);
+		int count = ta.getIndexCount();
+		for (int i = 0; i < count; i++) {
+			int index = ta.getIndex(i);
+			switch (index) {
+			case R.styleable.PlayerButton_pb_button_color:
+				buttonColor = ta.getColor(index, Color.BLUE);
+				break;
+			case R.styleable.PlayerButton_pb_button_width:
+				buttonWidth = ta.getDimensionPixelSize(index, 10);
+				break;
+			case R.styleable.PlayerButton_pb_progress_color:
+				progressColor = ta.getColor(index, Color.BLUE);
+				break;
+			case R.styleable.PlayerButton_pb_stoken_color:
+				stokenColor = ta.getColor(index, Color.GRAY);
+				break;
+			case R.styleable.PlayerButton_pb_stoken_width:
+				stokenWidth = ta.getDimensionPixelSize(index, 15);
+				break;
+			case R.styleable.PlayerButton_pb_circle_background:
+				circleBackground = ta.getDrawable(index);
+				break;
+			case R.styleable.PlayerButton_pb_max_progress:
+				maxProgress = ta.getInteger(index, 10000);
+				break;
+			}
+		}
+		ta.recycle();
 	}
 
 	int stokenWidth = 15;
 	int stokenColor = Color.GRAY;
-	int circleBackground = Color.WHITE;
+	Drawable circleBackground = null;
 	int centerX = 100;
 	int centerY = 100;
 	int radius = 50;
@@ -59,14 +96,14 @@ public class PlayerButton extends View {
 	int buttonColor = Color.BLUE;
 
 	int pading = 5;
-	public final static int STATE_CAN_PLAY = 0;
-	public final static int STATE_CAN_PAUSE = 1;
-
+	public final int STATE_CAN_PLAY = 0;
+	public final int STATE_CAN_PAUSE = 1;
+	public final int STATE_PREPARE = 2;
 	int currentState = STATE_CAN_PLAY;
 	int progressColor = Color.BLUE;
 	Paint paint = null;
 
-	static int currentProgress = 0;
+	int currentProgress = 0;
 	int maxProgress = 10000;
 	RectF oval = null;
 
@@ -94,8 +131,27 @@ public class PlayerButton extends View {
 
 		// 画圆的背景
 		paint.setStyle(Paint.Style.FILL);
-		paint.setColor(circleBackground);
-		canvas.drawCircle(centerX, centerY, radius - stokenWidth, paint);
+		// paint.setColor(circleBackground);
+		path.addCircle(centerX, centerY, radius - stokenWidth, Direction.CCW);
+		canvas.clipPath(path);
+
+		// 判断是图片还是颜色
+		if (circleBackground instanceof BitmapDrawable) {
+			Bitmap bitmap = ((BitmapDrawable) circleBackground).getBitmap();
+			int bmHeight = bitmap.getHeight();
+			int bmWidth = bitmap.getWidth();
+			Matrix matrix = new Matrix();
+			float sx = (width - pading) * 1.0f / bmWidth;
+			float sy = (height - pading) * 1.0f / bmHeight;
+			float s = Math.max(sx, sy);
+			// 放大
+			matrix.setScale(s, s);
+			canvas.drawBitmap(bitmap, matrix, paint);
+			// canvas.drawBitmap(bitmap, 0, 0, paint);
+		} else {
+			paint.setColor(((ColorDrawable) circleBackground).getColor());
+			canvas.drawCircle(centerX, centerY, radius - stokenWidth, paint);
+		}
 
 		// 画中间按钮
 		paint.setColor(buttonColor);
@@ -117,6 +173,7 @@ public class PlayerButton extends View {
 		}
 		canvas.drawLines(pts, paint);
 		// super.onDraw(canvas);
+
 	}
 
 	public void setProgress(int progress) {
@@ -156,14 +213,15 @@ public class PlayerButton extends View {
 	}
 
 	boolean isPlayComplete = true;
+	private Path path;
 
-	public void play(final Activity activity) {
+	public void play() {
 		synchronized (this) {
 			Log.d("", "当前播放状态=" + currentState + "");
 			if (currentState == STATE_CAN_PLAY) {
 				changeState();
 				final ValueAnimator va = ValueAnimator.ofInt(currentProgress,
-						maxProgress).setDuration(maxProgress-currentProgress);
+						maxProgress).setDuration(maxProgress - currentProgress);
 				va.setInterpolator(new LinearInterpolator());
 				va.addUpdateListener(new AnimatorUpdateListener() {
 					@Override
@@ -190,6 +248,10 @@ public class PlayerButton extends View {
 		}
 	}
 
+	public void prepare() {
+		// 加载的动画
+	}
+
 	class ProgressAnimListener implements AnimatorListener {
 		@Override
 		public void onAnimationStart(Animator animation) {
@@ -214,4 +276,11 @@ public class PlayerButton extends View {
 		}
 	}
 
+	public interface PlayStateChangeListener {
+		public void onPrepare();
+
+		public void onPlay();
+
+		public void onPause();
+	}
 }

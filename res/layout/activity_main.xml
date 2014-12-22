@@ -1,14 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:zyh="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:gravity="center_horizontal"
     android:orientation="vertical" >
 
     <com.zyh.playbutton.PlayerButton
         android:id="@+id/pb"
         android:layout_width="150dp"
         android:layout_height="150dp"
-        android:layout_centerInParent="true" >
+        zyh:pb_button_color="#06a"
+        zyh:pb_button_width="3dp"
+        zyh:pb_circle_background="#aaa"
+        zyh:pb_max_progress="10000"
+        zyh:pb_progress_color="#06a"
+        zyh:pb_stoken_color="#4444"
+        zyh:pb_stoken_width="7dp" >
     </com.zyh.playbutton.PlayerButton>
 
-</RelativeLayout>
+    <com.zyh.playbutton.PlayerButton
+        android:id="@+id/pb1"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        zyh:pb_button_color="#0ff"
+        zyh:pb_button_width="4dp"
+        zyh:pb_circle_background="@drawable/t1"
+        zyh:pb_max_progress="7"
+        zyh:pb_progress_color="#0ff"
+        zyh:pb_stoken_color="#400"
+        zyh:pb_stoken_width="10dp" >
+    </com.zyh.playbutton.PlayerButton>
+
+    <com.zyh.playbutton.PlayerButton
+        android:id="@+id/pb2"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        zyh:pb_button_color="#ff0"
+        zyh:pb_button_width="2dp"
+        zyh:pb_circle_background="@drawable/t2"
+        zyh:pb_max_progress="10000"
+        zyh:pb_progress_color="#ff0"
+        zyh:pb_stoken_color="#234"
+        zyh:pb_stoken_width="6dp" >
+    </com.zyh.playbutton.PlayerButton>
+
+</LinearLayout>
